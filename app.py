@@ -162,7 +162,7 @@ for nombre, pb in competidores.items():
         "Intentos": len(intentos),
         "DNFs": dnfs,
         "Puntos": puntos_totales
-        "Puntos": puntos
+        
     })
 
 df = pd.DataFrame(resultados_finales).sort_values(by="Puntos", ascending=False)
