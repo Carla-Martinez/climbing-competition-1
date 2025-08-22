@@ -114,7 +114,7 @@ with col5:
             pd.DataFrame(rows).to_csv(CSV_FILE, index=False)
         else:
             st.error(f"{nombre} no tiene intentos para borrar")
-@@ -103,55 +67,41 @@ def puntuar(pb, tiempo, nuevo_pb):
+def puntuar(pb, tiempo, nuevo_pb):
         if os.path.exists(CSV_FILE):
             os.remove(CSV_FILE)
         resultados = {nombre: [] for nombre in competidores.keys()}
