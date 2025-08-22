@@ -21,10 +21,6 @@ competidores = {
     "Oriol": 5.47,
     "Julia": 8.80,
     "Víctor": 5.97
-    "Unax": 5.35, "Ivan": 7.149, "Leslie": 6.66, "Leire": 7.32,
-    "Haize": 8.67, "Aida": 9.35, "Maria": 7.98, "Alberto": 5.409,
-    "Miquel": 5.230, "Alex Rivas": 5.41, "Alejo": 5.47, "Carla": 6.96,
-    "Ola": 6.51, "Oriol": 5.47, "Julia": 8.80, "Víctor": 5.97
 }
 
 CSV_FILE = "resultados.csv"
