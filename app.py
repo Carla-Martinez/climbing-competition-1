@@ -1,7 +1,8 @@
 import streamlit as st
 import pandas as pd
 import os
-from streamlit_autorefresh import st_autorefresh  # Componente necesario
+import io
+from streamlit_autorefresh import st_autorefresh
 
 # --- PB iniciales ---
 competidores = {
@@ -26,14 +27,20 @@ st.title("🏆 Competición de Escalada - Ranking en Vivo")
 # Auto-refresco cada 5 segundos
 _ = st_autorefresh(interval=5000, key="refresh")
 
-# Carga resultados desde CSV
-if os.path.exists(CSV_FILE):
-    df_historial = pd.read_csv(CSV_FILE)
-    resultados = {nombre: [] for nombre in competidores.keys()}
-    for _, row in df_historial.iterrows():
-        resultados[row["Competidor"]].append((row["Tipo"], row["Valor"]))
-else:
-    resultados = {nombre: [] for nombre in competidores.keys()}
+# Carga resultados desde CSV con manejo de errores
+resultados = {nombre: [] for nombre in competidores.keys()}
+if os.path.exists(CSV_FILE) and os.path.getsize(CSV_FILE) > 0:
+    try:
+        # Nota: pd.read_csv también debe saber el separador
+        df_historial = pd.read_csv(CSV_FILE, sep=';')
+        for _, row in df_historial.iterrows():
+            resultados[row["Competidor"]].append((row["Tipo"], row["Valor"]))
+    except pd.errors.EmptyDataError:
+        st.warning("El archivo de resultados está vacío. Creando uno nuevo.")
+    except Exception as e:
+        st.error(f"Se ha producido un error al cargar el historial: {e}")
+        st.info("El historial podría estar corrupto. Se reiniciará la aplicación.")
+        os.remove(CSV_FILE)
 
 # Formulario de entrada
 col1, col2, col3 = st.columns([2, 2, 2])
@@ -44,13 +51,15 @@ with col2:
 with col3:
     tiempo = st.number_input("Nuevo tiempo (s)", min_value=0.0, step=0.01) if opcion == "Tiempo" else None
 
-col4, col5, col6 = st.columns(3)
+col4, col5, col6, col7 = st.columns(4)
+
 with col4:
     if st.button("➕ Añadir intento"):
         resultados[nombre].append(("tiempo", tiempo) if opcion == "Tiempo" and tiempo > 0 else ("dnf", None))
         st.success(f"{nombre}: {'tiempo ' + f'{tiempo:.2f}s' if opcion == 'Tiempo' else 'DNF'} añadido")
         rows = [{"Competidor": n, "Tipo": t, "Valor": v} for n, intentos in resultados.items() for t, v in intentos]
-        pd.DataFrame(rows).to_csv(CSV_FILE, index=False)
+        # Al guardar el CSV, usa ';' como separador
+        pd.DataFrame(rows).to_csv(CSV_FILE, index=False, sep=';')
 
 with col5:
     if st.button("↩️ Deshacer último intento"):
@@ -58,7 +67,8 @@ with col5:
             ultimo = resultados[nombre].pop()
             st.info(f"Último intento de {nombre} eliminado ({'DNF' if ultimo[0]=='dnf' else f'{ultimo[1]:.2f}s'})")
             rows = [{"Competidor": n, "Tipo": t, "Valor": v} for n, intentos in resultados.items() for t, v in intentos]
-            pd.DataFrame(rows).to_csv(CSV_FILE, index=False)
+            # Al guardar el CSV, usa ';' como separador
+            pd.DataFrame(rows).to_csv(CSV_FILE, index=False, sep=';')
         else:
             st.error(f"{nombre} no tiene intentos para borrar")
 
@@ -68,6 +78,38 @@ with col6:
             os.remove(CSV_FILE)
         resultados = {nombre: [] for nombre in competidores.keys()}
         st.info("Historial borrado. Competición reiniciada.")
+
+# --- Lógica para el nuevo botón de descarga ---
+data_to_download = []
+for competidor, intentos in resultados.items():
+    pb_inicial = competidores[competidor]
+    for i, (tipo, valor) in enumerate(intentos):
+        puntos_intento = 0
+        if tipo == "tiempo":
+            puntos_intento = puntuar(pb_inicial, valor, valor < pb_inicial)
+        
+        data_to_download.append({
+            "Competidor": competidor,
+            "PB Inicial": pb_inicial,
+            "Intento": i + 1,
+            "Tipo de Intento": tipo,
+            "Tiempo (s)": f"{valor:.2f}" if valor else "N/A",
+            "Puntos por Intento": puntos_intento
+        })
+
+df_download = pd.DataFrame(data_to_download)
+
+# Al crear el archivo para descargar, usa ';' como separador
+csv_string = df_download.to_csv(index=False, sep=';')
+csv_buffer = io.StringIO(csv_string)
+
+with col7:
+    st.download_button(
+        label="⬇️ Download results",
+        data=csv_buffer.getvalue().encode('utf-8'),
+        file_name='competition_results.csv',
+        mime='text/csv',
+    )
 
 # Cálculo de ranking
 resultados_finales = []
