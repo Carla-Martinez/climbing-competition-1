@@ -86,12 +86,15 @@ for nombre, pb in competidores.items():
                 puntos += puntuar(pb, mejor, valor)
                 if valor < mejor:
                     mejor = valor
-            else:
+            elif len(intentos) > 7:
                 puntos += 0
         else:
-            dnfs += 1
-            if dnfs > 1:
-                puntos -= 1
+            if len(intentos) > 7:
+                puntos += 0
+            elif len(intentos) <=7:   
+                dnfs += 1
+                if dnfs > 1:
+                    puntos -= 1
 
     resultados_finales.append({
         "Competitor": nombre,
