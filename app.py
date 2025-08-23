@@ -86,6 +86,8 @@ for nombre, pb in competidores.items():
                 puntos += puntuar(pb, mejor, valor)
                 if valor < mejor:
                     mejor = valor
+            else:
+                puntos += 0
         else:
             dnfs += 1
             if dnfs > 1:
