@@ -79,6 +79,7 @@ for nombre, pb in competidores.items():
     puntos = 0
     mejor = pb
     dnfs = 0
+    pb_count = 0  # Initialize PB counter for each competitor
     
     for i, (tipo, valor) in enumerate(intentos):
         # Only calculate points for the first 7 attempts (i from 0 to 6)
@@ -91,8 +92,11 @@ for nombre, pb in competidores.items():
                     puntos -= 1
         
         # Always update the best time regardless of the number of attempts
-        if tipo == "tiempo" and valor < mejor:
-            mejor = valor
+        if tipo == "tiempo":
+            # Check for a new PB
+            if valor < mejor:
+                mejor = valor
+                pb_count += 1 # Increment the counter if a new PB is achieved
 
     resultados_finales.append({
         "Competitor": nombre,
@@ -100,7 +104,8 @@ for nombre, pb in competidores.items():
         "Attempts": len(intentos),
         "DNFs": dnfs,
         "Points": puntos,
-        "Best time": mejor
+        "Best time": mejor,
+        "PBs Achieved": pb_count  # Add the new PB counter to the final results
     })
 
 # The table is sorted by points
@@ -177,24 +182,32 @@ if not st.session_state.show_podium:
     for competidor, intentos in resultados.items():
         pb_inicial = competidores[competidor]
         mejor_tiempo_history = pb_inicial
+        pb_count_history = 0  # Initialize PB counter for the download history
         
         for i, (tipo, valor) in enumerate(intentos):
             puntos_intento = 0
+            
+            # Check for PB and update the counter and best time
+            new_pb = False
+            if tipo == "tiempo":
+                if valor < mejor_tiempo_history:
+                    mejor_tiempo_history = valor
+                    new_pb = True
+                    pb_count_history += 1
+            
             # Only calculate points for the first 7 attempts
             if i < 7:
                 if tipo == "tiempo":
                     puntos_intento = puntuar(pb_inicial, mejor_tiempo_history, valor)
-            
-            if tipo == "tiempo" and valor < mejor_tiempo_history:
-                mejor_tiempo_history = valor
-            
+                
             data_to_download.append({
                 "Competitor": competidor,
                 "Initial PB": pb_inicial,
                 "Attempt": i + 1,
                 "Attempt Type": tipo,
                 "Time (s)": f"{valor:.2f}" if valor else "N/A",
-                "Points per Attempt": puntos_intento
+                "Points per Attempt": puntos_intento,
+                "New PB": "Yes" if new_pb else "No" # Add a new column to the download data
             })
 
     df_download = pd.DataFrame(data_to_download)
@@ -233,7 +246,12 @@ if not st.session_state.show_podium:
 
     st.subheader("📜 Attempt History")
     for nombre, intentos in resultados.items():
-        historial = [f"{valor:.2f}s" if t == "tiempo" else "DNF" for t, valor in intentos]
+        historial = []
+        for tipo, valor in intentos:
+            if tipo == "tiempo":
+                historial.append(f"{valor:.2f}s")
+            else:
+                historial.append("DNF")
         st.write(f"**{nombre}**: {', '.join(historial) if historial else 'No attempts'}")
         
 else:
@@ -276,3 +294,4 @@ else:
 
     # Muestra la imagen del podio
     st.image("https://i.imgur.com/8QGzS1t.png", use_container_width=True)
+
