@@ -182,17 +182,15 @@ if not st.session_state.show_podium:
     for competidor, intentos in resultados.items():
         pb_inicial = competidores[competidor]
         mejor_tiempo_history = pb_inicial
-        pb_count_history = 0  # Initialize PB counter for the download history
+        pb_count_history = 0
         
         for i, (tipo, valor) in enumerate(intentos):
             puntos_intento = 0
             
             # Check for PB and update the counter and best time
-            new_pb = False
             if tipo == "tiempo":
                 if valor < mejor_tiempo_history:
                     mejor_tiempo_history = valor
-                    new_pb = True
                     pb_count_history += 1
             
             # Only calculate points for the first 7 attempts
@@ -207,7 +205,8 @@ if not st.session_state.show_podium:
                 "Attempt Type": tipo,
                 "Time (s)": f"{valor:.2f}" if valor else "N/A",
                 "Points per Attempt": puntos_intento,
-                "New PB": "Yes" if new_pb else "No" # Add a new column to the download data
+                # New column to show the cumulative number of PBs
+                "PBs Achieved": pb_count_history 
             })
 
     df_download = pd.DataFrame(data_to_download)
@@ -291,6 +290,9 @@ else:
             st.caption(f"Mejor tiempo: {top_3.iloc[2]['Best time']:.2f}s")
     else:
         st.info("Not enough competitors with attempts to form a podium.")
+
+    # Muestra la imagen del podio
+    st.image("https://i.imgur.com/8QGzS1t.png", use_container_width=True)
 
     # Muestra la imagen del podio
     st.image("https://i.imgur.com/8QGzS1t.png", use_container_width=True)
