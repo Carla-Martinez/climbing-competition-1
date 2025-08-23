@@ -79,22 +79,20 @@ for nombre, pb in competidores.items():
     puntos = 0
     mejor = pb
     dnfs = 0
-    for tipo, valor in intentos:
-        if tipo == "tiempo":
-            # Corrects the condition to include the same time as a PB
-            if len(intentos) <= 7:
+    
+    for i, (tipo, valor) in enumerate(intentos):
+        # Only calculate points for the first 7 attempts (i from 0 to 6)
+        if i < 7:
+            if tipo == "tiempo":
                 puntos += puntuar(pb, mejor, valor)
-                if valor < mejor:
-                    mejor = valor
-            elif len(intentos) > 7:
-                puntos += 0
-        else:
-            if len(intentos) > 7:
-                puntos += 0
-            elif len(intentos) <=7:   
+            else: # DNF
                 dnfs += 1
                 if dnfs > 1:
                     puntos -= 1
+        
+        # Always update the best time regardless of the number of attempts
+        if tipo == "tiempo" and valor < mejor:
+            mejor = valor
 
     resultados_finales.append({
         "Competitor": nombre,
@@ -182,11 +180,13 @@ if not st.session_state.show_podium:
         
         for i, (tipo, valor) in enumerate(intentos):
             puntos_intento = 0
-            if tipo == "tiempo":
-                puntos_intento = puntuar(pb_inicial, mejor_tiempo_history, valor)
-                
-                if valor < mejor_tiempo_history:
-                    mejor_tiempo_history = valor
+            # Only calculate points for the first 7 attempts
+            if i < 7:
+                if tipo == "tiempo":
+                    puntos_intento = puntuar(pb_inicial, mejor_tiempo_history, valor)
+            
+            if tipo == "tiempo" and valor < mejor_tiempo_history:
+                mejor_tiempo_history = valor
             
             data_to_download.append({
                 "Competitor": competidor,
@@ -275,4 +275,4 @@ else:
         st.info("Not enough competitors with attempts to form a podium.")
 
     # Muestra la imagen del podio
-    st.image("podi2.png", use_container_width=True)
+    st.image("https://i.imgur.com/8QGzS1t.png", use_container_width=True)
